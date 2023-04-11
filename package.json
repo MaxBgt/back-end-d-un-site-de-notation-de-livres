@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/MaxBgt/back-end-d-un-site-de-notation-de-livres/issues"
   },
-  "homepage": "https://github.com/MaxBgt/back-end-d-un-site-de-notation-de-livres#readme"
+  "homepage": "https://github.com/MaxBgt/back-end-d-un-site-de-notation-de-livres#readme",
+  "dependencies": {
+    "mongoose": "^7.0.3"
+  }
 }
