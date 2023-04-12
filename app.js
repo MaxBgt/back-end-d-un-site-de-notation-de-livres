@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const SignUp = require("./models/SignUp");
+const userRoutes = require("./routes/user");
+const Book = require("./models/Book");
 mongoose
   .connect(
     "mongodb+srv://Max:V0jgllSYNiaOtx9z@cluster0.cyqqto2.mongodb.net/?retryWrites=true&w=majority",
@@ -25,14 +26,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/api/auth/signup", (req, res, next) => {
-  const signup = new SignUp({
+app.post("/api/books", (req, res, next) => {
+  delete req.body._id;
+  const book = new Book({
     ...req.body,
   });
-  signup
+  book
     .save()
-    .then(() => res.status(200).json({ message: "Ok" }))
+    .then(() => res.status(201).json({ message: "livre enregistré" }))
     .catch((error) => res.status(400).json({ error }));
 });
 
+app.get("/api/books", (req, res, next) => {
+  const books = [];
+  res.status(200).json(books);
+});
+
+app.use("/api/auth", userRoutes);
 module.exports = app;
