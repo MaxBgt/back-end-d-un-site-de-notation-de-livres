@@ -46,3 +46,48 @@ exports.bestRatings = (req, res, next) => {
     .then((books) => res.status(200).json(books))
     .catch((error) => res.status(400).json({ error: error }));
 };
+
+exports.rateBook = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const userId = req.body.userId;
+    const grade = req.body.grade;
+
+    if (grade < 0 || grade > 5) {
+      return res.status(400).json({ error: "La note doit être en 0 et 5" });
+    }
+
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ error: "Livre non trouvé" });
+    }
+
+    const ratingIndex = book.ratings.findIndex(
+      (rating) => rating.userId === userId
+    );
+    if (ratingIndex !== -1) {
+      return res.status(400).json({ error: "Vous avez déjà noté ce livre" });
+    }
+
+    book.ratings.push({ userId, grade });
+
+    if (book.ratings.length > 0) {
+      const totalRatings = book.ratings.reduce((sum, rating) => {
+        if (typeof rating.grade === "number") {
+          return sum + rating.grade;
+        }
+        return sum;
+      }, 0);
+
+      book.averageRating = totalRatings / book.ratings.length;
+    } else {
+      book.averageRating = 0;
+    }
+
+    await book.save();
+    res.status(200).json({ message: "Note ajoutée correctement", book });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+  console.log(req.body);
+};
