@@ -1,4 +1,3 @@
-const { error } = require("console");
 const Book = require("../models/Book");
 const fs = require("fs");
 
@@ -54,6 +53,9 @@ exports.modifyBooks = async (req, res, next) => {
 exports.deletebooks = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
+      if (!book) {
+        return res.status(404).json({ message: "Livre non trouvé" });
+      }
       if (book.userId !== req.auth.userId) {
         res.status(403).json({ message: "Accès refusé" });
       } else {
