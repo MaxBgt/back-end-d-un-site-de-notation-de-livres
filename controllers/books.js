@@ -1,4 +1,6 @@
+const { error } = require("console");
 const Book = require("../models/Book");
+const fs = require("fs");
 
 exports.createBooks = (req, res, next) => {
   const bookData = JSON.parse(req.body.book);
@@ -14,16 +16,56 @@ exports.createBooks = (req, res, next) => {
     .catch((error) => res.status(400).json({ error: error }));
 };
 
-exports.modifyBooks = (req, res, next) => {
-  Book.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
-    .then(() => res.status(200).json({ message: "Livre modifié" }))
-    .catch((error) => res.status(400).json({ error: error }));
+exports.modifyBooks = async (req, res, next) => {
+  try {
+    const book = await Book.findOne({ _id: req.params.id });
+    if (!book) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+
+    if (book.userId !== req.auth.userId) {
+      return res.status(403).json({ message: "Accès non autorisé" });
+    }
+
+    const updatedBookData = { ...req.body, _id: req.params.id };
+
+    if (req.file) {
+      const filename = book.imageUrl.split("/images/")[1];
+      fs.unlink(`images/${filename}`, async (err) => {
+        if (err) {
+          console.error(`Erreur dans la supression de l'image: ${err}`);
+        } else {
+          updatedBookData.imageUrl = `${req.protocol}://${req.get(
+            "host"
+          )}/images/${req.file.filename}`;
+          await Book.updateOne({ _id: req.params.id }, updatedBookData);
+          res.status(200).json({ message: "Livre modifié" });
+        }
+      });
+    } else {
+      await Book.updateOne({ _id: req.params.id }, updatedBookData);
+      res.status(200).json({ message: "Livre modifié" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error });
+  }
 };
 
 exports.deletebooks = (req, res, next) => {
-  Book.deleteOne({ _id: req.params.id })
-    .then(() => res.status(200).json({ message: "Livre supprimé" }))
-    .catch((error) => res.status(400).json({ error: error }));
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (book.userId !== req.auth.userId) {
+        res.status(403).json({ message: "Accès refusé" });
+      } else {
+        const filename = book.imageUrl.split("/images/")[1];
+        fs.unlink(`images/${filename}`, () => {
+          Book.deleteOne({ _id: req.params.id })
+            .then(() => res.status(200).json({ message: "Livre supprimé" }))
+            .catch((error) => res.status(400).json({ error: error }));
+        });
+      }
+    })
+    .catch((error) => res.status(500).json({ error }));
 };
 
 exports.getById = (req, res, next) => {
@@ -89,5 +131,4 @@ exports.rateBook = async (req, res, next) => {
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
-  console.log(req.body);
 };

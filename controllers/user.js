@@ -3,6 +3,18 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 exports.signup = (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email && !password) {
+    return res.status(400).json({ message: "Email et mot de passe requis" });
+  }
+
+  if (/\s/.test(password) || password.trim().length === 0) {
+    return res.status(400).json({
+      message:
+        "Le mot de passe ne doit pas contenir d'espaces et ne doit pas être vide",
+    });
+  }
   bcrypt
     .hash(req.body.password, 10)
     .then((hash) => {
